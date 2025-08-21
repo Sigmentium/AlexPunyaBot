@@ -63,7 +63,7 @@ bot.on('message', async (msg) => {
 });
 
 bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, '<b>Привет!\nЯ Алекс Пыня!\nЯ бот-повторюшка</b>\n\nДобавь меня в группу, и я буду вас веселить\n\n<b>P.S. Добавляя меня в группу или пользуясь мною, вы соглашаетесь с <a href="https://sigmentium.github.io">условиями пользования</a></b>', { parse_mode: 'HTML' });
+    bot.sendMessage(msg.chat.id, '<b>Привет!\nЯ Алекс Пыня!\nЯ бот-повторюшка</b>\n\nДобавь меня в группу, и я буду вас веселить', { parse_mode: 'HTML' });
 });
 
 bot.onText(/\/database/, (msg) => {
