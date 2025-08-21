@@ -41,6 +41,7 @@ bot.on('message', (msg) => {
 });
 
 bot.on('message', async (msg) => {
+    const text = msg.text;
     const chatId = msg.chat.id;
     const messageId = msg.message_id;
 
