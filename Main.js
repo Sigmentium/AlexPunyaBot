@@ -1,0 +1,85 @@
+const fs = require('fs');
+const path = require('path');
+const TelegramBot = require('node-telegram-bot-api');
+
+require('dotenv').config();
+
+const Token = process.env.token;
+
+const bot = new TelegramBot(Token, { polling: true });
+
+let Messages = {};
+
+if (fs.existsSync('Messages.json')) {
+    Messages = JSON.parse(fs.readFileSync('Messages.json'));
+}
+
+function SaveMessage() {
+    fs.writeFileSync('Messages.json', JSON.stringify(Messages, null, 2));
+}
+
+bot.on('message', (msg) => {
+    const text = msg.text;
+
+    if (!text) return;
+    if (text.startsWith('/')) return;
+    if (text.includes('http://')) return;
+    if (text.includes('https://')) return;
+
+    if (!Array.isArray(Messages[msg.chat.id])) {
+        Messages[msg.chat.id] = [];
+    }
+
+    Messages[msg.chat.id].push(text);
+    SaveMessage();
+
+    if (Math.random() < 0.8) {
+        const Message = Messages[msg.chat.id];
+        const RandomMessage = Message[Math.floor(Math.random() * Message.length)];
+        bot.sendMessage(msg.chat.id, RandomMessage);
+    }
+});
+
+bot.on('message', async (msg) => {
+    const chatId = msg.chat.id;
+    const messageId = msg.message_id;
+
+    if (!text) return;
+    if (text.startsWith('/')) return;
+    if (text.includes('http://')) return;
+    if (text.includes('https://')) return;
+
+    if (Math.random() < 0.2) {
+        await bot._request("setMessageReaction", {
+            qs: {
+                chat_id: chatId,
+                message_id: messageId,
+                reaction: JSON.stringify([{ type: 'emoji', emoji: '👍' }]),
+                is_big: false
+            }
+        });
+    }
+});
+
+bot.onText(/\/start/, (msg) => {
+    bot.sendMessage(msg.chat.id, '<b>Привет!\nЯ Алекс Пыня!\nЯ бот-повторюшка</b>\n\nДобавь меня в группу, и я буду вас веселить\n\n<b>P.S. Добавляя меня в группу или пользуясь мною, вы соглашаетесь с <a href="https://sigmentium.github.io">условиями пользования</a></b>', { parse_mode: 'HTML' });
+});
+
+bot.onText(/\/database/, (msg) => {
+    const FilePath = path.resolve(__dirname, 'Messages.json');
+
+    if (msg.chat.id === Number(process.env.chatId)) {
+        bot.sendDocument(msg.chat.id, FilePath, {}, {
+            filename: 'Messages.json',
+            contentType: 'application/octet-stream',
+        })
+            .catch(() => {
+                bot.sendMessage(msg.chat.id, '<b>Ошибка отправки</b>', { parse_mode: 'HTML' });
+            });
+    }
+    else {
+        bot.sendMessage(msg.chat.id, '<b>Ошибка. У вас недостаточно прав.</b>', { parse_mode: 'HTML' });
+    }
+});
+
+console.log('> Successful start');
