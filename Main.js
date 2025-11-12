@@ -92,7 +92,7 @@ bot.onText(/\/upload_database/, (msg) => {
     const fileLink = await bot.getFileLink(fileId);
 
     const res = await fetch(fileLink);
-    const fileStream = fs.createWriteStream('./database.json');
+    const fileStream = fs.createWriteStream('./Messages.json');
 
     // Читаем поток из fetch и пишем в файл
     await new Promise((resolve, reject) => {
