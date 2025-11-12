@@ -18,7 +18,7 @@ function SaveMessage() {
     fs.writeFileSync('Messages.json', JSON.stringify(Messages, null, 2));
 }
 
-bot.on('message', (msg) => {
+bot.on('message', async (msg) => {
     const text = msg.text;
 
     if (!text) return;
@@ -30,31 +30,21 @@ bot.on('message', (msg) => {
         Messages[msg.chat.id] = [];
     }
 
-    Messages[msg.chat.id].push(text);
-    SaveMessage();
+    if (!Messages[msg.chat.id].includes(text)) {
+        Messages[msg.chat.id].push(text);
+        SaveMessage();
+    }
 
     if (Math.random() < 0.8) {
         const Message = Messages[msg.chat.id];
         const RandomMessage = Message[Math.floor(Math.random() * Message.length)];
         bot.sendMessage(msg.chat.id, RandomMessage);
     }
-});
-
-bot.on('message', async (msg) => {
-    const text = msg.text;
-    const chatId = msg.chat.id;
-    const messageId = msg.message_id;
-
-    if (!text) return;
-    if (text.startsWith('/')) return;
-    if (text.includes('http://')) return;
-    if (text.includes('https://')) return;
-
-    if (Math.random() < 0.2) {
+    else {
         await bot._request("setMessageReaction", {
             qs: {
-                chat_id: chatId,
-                message_id: messageId,
+                chat_id: msg.chat.id,
+                message_id: msg.message_id,
                 reaction: JSON.stringify([{ type: 'emoji', emoji: '👍' }]),
                 is_big: false
             }
@@ -84,25 +74,25 @@ bot.onText(/\/database/, (msg) => {
 });
 
 bot.onText(/\/upload_database/, (msg) => {
-  const chatId = msg.chat.id;
-  bot.sendMessage(chatId, 'Отправь мне файл базы данных (database.json)');
+    if (msg.chat.id === Number(process.env.chatId)) {
+        bot.sendMessage(msg.chat.id, '<b>Отправьте файл Messages.json</b>', { parse_mode: 'HTML' });
 
-  bot.once('document', async (msg) => {
-    const fileId = msg.document.file_id;
-    const fileLink = await bot.getFileLink(fileId);
+        bot.once('message', async (msg) => {
+            const FileInfo = await bot.getFile(msg.document.file_id);
+            const FileUrl = `https://api.telegram.org/file/bot${Token}/${FileInfo.file_path}`;
+            const FileName = 'Messages.json';
 
-    const res = await fetch(fileLink);
-    const fileStream = fs.createWriteStream('./Messages.json');
+            const res = await fetch(FileUrl);
+            const buffer = Buffer.from(await res.arrayBuffer());
 
-    // Читаем поток из fetch и пишем в файл
-    await new Promise((resolve, reject) => {
-      res.body.pipe(fileStream);
-      res.body.on('error', reject);
-      fileStream.on('finish', resolve);
-    });
+            fs.writeFileSync('Messages.json', buffer);
 
-    bot.sendMessage(chatId, '✅ Файл успешно сохранён как database.json');
-  });
+            bot.sendMessage(msg.chat.id, '<b>Успешная загрузка!</b>', { parse_mode: 'HTML' });
+        });
+    }
+    else {
+        bot.sendMessage(msg.chat.id, '<b>Ошибка. У вас недостаточно прав.</b>', { parse_mode: 'HTML' });
+    }
 });
 
 console.log('> Successful start');
