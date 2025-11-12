@@ -83,4 +83,26 @@ bot.onText(/\/database/, (msg) => {
     }
 });
 
+bot.onText(/\/upload_database/, (msg) => {
+  const chatId = msg.chat.id;
+  bot.sendMessage(chatId, 'Отправь мне файл базы данных (database.json)');
+
+  bot.once('document', async (msg) => {
+    const fileId = msg.document.file_id;
+    const fileLink = await bot.getFileLink(fileId);
+
+    const res = await fetch(fileLink);
+    const fileStream = fs.createWriteStream('./database.json');
+
+    // Читаем поток из fetch и пишем в файл
+    await new Promise((resolve, reject) => {
+      res.body.pipe(fileStream);
+      res.body.on('error', reject);
+      fileStream.on('finish', resolve);
+    });
+
+    bot.sendMessage(chatId, '✅ Файл успешно сохранён как database.json');
+  });
+});
+
 console.log('> Successful start');
