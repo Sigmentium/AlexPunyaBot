@@ -175,6 +175,8 @@ bot.onText(/\/upload_database/, (msg) => {
 
             fs.writeFileSync('Messages.json', buffer);
 
+            Messages = JSON.parse(fs.readFileSync('Messages.json'));
+
             bot.sendMessage(msg.chat.id, '<b>Успешная загрузка!</b>', { parse_mode: 'HTML' });
         });
     }
