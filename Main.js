@@ -1,8 +1,13 @@
 const fs = require('fs');
 const path = require('path');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpeg_static = require('ffmpeg-static');
 const TelegramBot = require('node-telegram-bot-api');
+const { Readable, PassThrough } = require('stream');
 
 require('dotenv').config();
+
+ffmpeg.setFfmpegPath(ffmpeg_static);
 
 const Token = process.env.token;
 
@@ -16,6 +21,33 @@ if (fs.existsSync('Messages.json')) {
 
 function SaveMessage() {
     fs.writeFileSync('Messages.json', JSON.stringify(Messages, null, 2));
+}
+
+function ConvertOGG(InputBuffer) {
+    const InputStream = new Readable();
+    InputStream.push(InputBuffer);
+    InputStream.push(null);
+
+    const stream = new PassThrough();
+
+    ffmpeg(InputStream)
+        .inputFormat('wav')
+        .audioCodec('libopus')
+        .audioChannels(1)
+        .audioFrequency(48000)
+        .audioBitrate('64k')
+        .format('ogg')
+        .outputOptions([
+            '-vbr on',
+            '-compression_level 10'
+        ])
+        .on('error', (err) => {
+            console.error(err);
+        })
+        .on('end', () => stream.end())
+        .pipe(stream, { end: true });
+
+    return stream;
 }
 
 bot.on('message', async (msg) => {
@@ -41,14 +73,71 @@ bot.on('message', async (msg) => {
         bot.sendMessage(msg.chat.id, RandomMessage);
     }
     else {
-        await bot._request("setMessageReaction", {
-            qs: {
-                chat_id: msg.chat.id,
-                message_id: msg.message_id,
-                reaction: JSON.stringify([{ type: 'emoji', emoji: '👍' }]),
-                is_big: false
+        if (Math.random() < 0.5) {
+            if (Math.random() < 0.5) {
+                await bot._request("setMessageReaction", {
+                    qs: {
+                        chat_id: msg.chat.id,
+                        message_id: msg.message_id,
+                        reaction: JSON.stringify([{ type: 'emoji', emoji: '👍' }]),
+                        is_big: false
+                    }
+                });
             }
-        });
+            else {
+                await bot._request("setMessageReaction", {
+                    qs: {
+                        chat_id: msg.chat.id,
+                        message_id: msg.message_id,
+                        reaction: JSON.stringify([{ type: 'emoji', emoji: '❤️' }]),
+                        is_big: false
+                    }
+                });
+            }
+        }
+        else {
+            if (Math.random() < 0.5) {
+                fetch('https://alexpunya-tts-server.onrender.com', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text
+                    })
+                })
+                    .then(async response => {
+                        const ResponseBuffer = await response.arrayBuffer();
+                        const AudioBuffer = Buffer.from(ResponseBuffer);
+
+                        const Audio = ConvertOGG(AudioBuffer);
+
+                        bot.sendVoice(msg.chat.id, Audio);
+                    });
+            }
+            else {
+                if (Math.random() < 0.5) {
+                    await bot._request("setMessageReaction", {
+                        qs: {
+                            chat_id: msg.chat.id,
+                            message_id: msg.message_id,
+                            reaction: JSON.stringify([{ type: 'emoji', emoji: '😁' }]),
+                            is_big: false
+                        }
+                    });
+                }
+                else {
+                    await bot._request("setMessageReaction", {
+                        qs: {
+                            chat_id: msg.chat.id,
+                            message_id: msg.message_id,
+                            reaction: JSON.stringify([{ type: 'emoji', emoji: '🤣' }]),
+                            is_big: false
+                        }
+                    });
+                }
+            }
+        }
     }
 });
 
@@ -80,7 +169,6 @@ bot.onText(/\/upload_database/, (msg) => {
         bot.once('message', async (msg) => {
             const FileInfo = await bot.getFile(msg.document.file_id);
             const FileUrl = `https://api.telegram.org/file/bot${Token}/${FileInfo.file_path}`;
-            const FileName = 'Messages.json';
 
             const res = await fetch(FileUrl);
             const buffer = Buffer.from(await res.arrayBuffer());
