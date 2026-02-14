@@ -52,6 +52,7 @@ function ConvertOGG(InputBuffer) {
 
 bot.on('message', async (msg) => {
     const text = msg.text;
+    const Random = Math.random();
 
     if (!text) return;
     if (text.startsWith('/')) return;
@@ -67,77 +68,42 @@ bot.on('message', async (msg) => {
         SaveMessage();
     }
 
-    if (Math.random() < 0.8) {
+    if (Random < 0.5) {
         const Message = Messages[msg.chat.id];
         const RandomMessage = Message[Math.floor(Math.random() * Message.length)];
         bot.sendMessage(msg.chat.id, RandomMessage);
     }
+    else if (Random > 0.7) {
+        const Reactions = ['👍', '❤️', '😁', '🤣'];
+        const RandomReaction = Reactions[Math.floor(Math.random() * Reactions.length)];
+
+        await bot._request("setMessageReaction", {
+            qs: {
+                chat_id: msg.chat.id,
+                message_id: msg.message_id,
+                reaction: JSON.stringify([{ type: 'emoji', emoji: RandomReaction }]),
+                is_big: false
+            }
+        });
+    }
     else {
-        if (Math.random() < 0.5) {
-            if (Math.random() < 0.5) {
-                await bot._request("setMessageReaction", {
-                    qs: {
-                        chat_id: msg.chat.id,
-                        message_id: msg.message_id,
-                        reaction: JSON.stringify([{ type: 'emoji', emoji: '👍' }]),
-                        is_big: false
-                    }
-                });
-            }
-            else {
-                await bot._request("setMessageReaction", {
-                    qs: {
-                        chat_id: msg.chat.id,
-                        message_id: msg.message_id,
-                        reaction: JSON.stringify([{ type: 'emoji', emoji: '❤️' }]),
-                        is_big: false
-                    }
-                });
-            }
-        }
-        else {
-            if (Math.random() < 0.5) {
-                fetch('https://alexpunya-tts-server.onrender.com', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        text: text
-                    })
-                })
-                    .then(async response => {
-                        const ResponseBuffer = await response.arrayBuffer();
-                        const AudioBuffer = Buffer.from(ResponseBuffer);
+        fetch('https://alexpunya-tts-server.onrender.com', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text: text
+            })
+        })
+            .then(async response => {
+                const ResponseBuffer = await response.arrayBuffer();
+                const AudioBuffer = Buffer.from(ResponseBuffer);
 
-                        const Audio = ConvertOGG(AudioBuffer);
+                const Audio = ConvertOGG(AudioBuffer);
 
-                        bot.sendVoice(msg.chat.id, Audio);
-                    });
-            }
-            else {
-                if (Math.random() < 0.5) {
-                    await bot._request("setMessageReaction", {
-                        qs: {
-                            chat_id: msg.chat.id,
-                            message_id: msg.message_id,
-                            reaction: JSON.stringify([{ type: 'emoji', emoji: '😁' }]),
-                            is_big: false
-                        }
-                    });
-                }
-                else {
-                    await bot._request("setMessageReaction", {
-                        qs: {
-                            chat_id: msg.chat.id,
-                            message_id: msg.message_id,
-                            reaction: JSON.stringify([{ type: 'emoji', emoji: '🤣' }]),
-                            is_big: false
-                        }
-                    });
-                }
-            }
-        }
+                bot.sendVoice(msg.chat.id, Audio);
+            });
     }
 });
 
