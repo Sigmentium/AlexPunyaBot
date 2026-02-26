@@ -14,13 +14,22 @@ const Token = process.env.token;
 const bot = new TelegramBot(Token, { polling: true });
 
 let Messages = {};
+let Stickers = {};
 
 if (fs.existsSync('Messages.json')) {
     Messages = JSON.parse(fs.readFileSync('Messages.json'));
 }
 
+if (fs.existsSync('Stickers.json')) {
+    Stickers = JSON.parse(fs.readFileSync('Stickers.json'));
+}
+
 function SaveMessage() {
     fs.writeFileSync('Messages.json', JSON.stringify(Messages, null, 2));
+}
+
+function SaveSticker() {
+    fs.writeFileSync('Stickers.json', JSON.stringify(Stickers, null, 2));
 }
 
 function ConvertOGG(InputBuffer) {
@@ -49,6 +58,15 @@ function ConvertOGG(InputBuffer) {
 
     return stream;
 }
+
+bot.on('sticker', (msg) => {
+    const StickerId = msg.sticker.file_id;
+
+    if (!Stickers[msg.chat.id].includes(StickerId)) {
+        Stickers[msg.chat.id].push(text);
+        SaveSticker();
+    }
+});
 
 bot.on('message', async (msg) => {
     const text = msg.text;
@@ -87,23 +105,27 @@ bot.on('message', async (msg) => {
         });
     }
     else {
-        fetch('https://alexpunya-tts-server.onrender.com', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                text: text
-            })
-        })
-            .then(async response => {
-                const ResponseBuffer = await response.arrayBuffer();
-                const AudioBuffer = Buffer.from(ResponseBuffer);
+        const Sticker = Stickers[msg.chat.id];
+        const RandomSticker = Sticker[Math.floor(Math.random() * Sticker.length)];
+        bot.sendSticker(msg.chat.id, RandomSticker);
 
-                const Audio = ConvertOGG(AudioBuffer);
+        // fetch('https://alexpunya-tts-server.onrender.com', {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json'
+        //     },
+        //     body: JSON.stringify({
+        //         text: text
+        //     })
+        // })
+        //     .then(async response => {
+        //         const ResponseBuffer = await response.arrayBuffer();
+        //         const AudioBuffer = Buffer.from(ResponseBuffer);
 
-                bot.sendVoice(msg.chat.id, Audio);
-            });
+        //         const Audio = ConvertOGG(AudioBuffer);
+
+        //         bot.sendVoice(msg.chat.id, Audio);
+        //     });
     }
 });
 
