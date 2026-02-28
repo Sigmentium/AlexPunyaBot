@@ -138,11 +138,20 @@ bot.onText(/\/start/, (msg) => {
 });
 
 bot.onText(/\/database/, (msg) => {
-    const FilePath = path.resolve(__dirname, 'Messages.json');
+    const FilePathMessages = path.resolve(__dirname, 'Messages.json');
+    const FilePathStickers = path.resolve(__dirname, 'Stickers.json');
 
     if (msg.chat.id === Number(process.env.chatId)) {
-        bot.sendDocument(msg.chat.id, FilePath, {}, {
+        bot.sendDocument(msg.chat.id, FilePathMessages, {}, {
             filename: 'Messages.json',
+            contentType: 'application/octet-stream',
+        })
+            .catch(() => {
+                bot.sendMessage(msg.chat.id, '<b>Ошибка отправки</b>', { parse_mode: 'HTML' });
+            });
+
+        bot.sendDocument(msg.chat.id, FilePathStickers, {}, {
+            filename: 'Stickers.json',
             contentType: 'application/octet-stream',
         })
             .catch(() => {
@@ -154,7 +163,7 @@ bot.onText(/\/database/, (msg) => {
     }
 });
 
-bot.onText(/\/upload_database/, (msg) => {
+bot.onText(/\/upload_database_messages/, (msg) => {
     if (msg.chat.id === Number(process.env.chatId)) {
         bot.sendMessage(msg.chat.id, '<b>Отправьте файл Messages.json</b>', { parse_mode: 'HTML' });
 
@@ -168,6 +177,29 @@ bot.onText(/\/upload_database/, (msg) => {
             fs.writeFileSync('Messages.json', buffer);
 
             Messages = JSON.parse(fs.readFileSync('Messages.json'));
+
+            bot.sendMessage(msg.chat.id, '<b>Успешная загрузка!</b>', { parse_mode: 'HTML' });
+        });
+    }
+    else {
+        bot.sendMessage(msg.chat.id, '<b>Ошибка. У вас недостаточно прав.</b>', { parse_mode: 'HTML' });
+    }
+});
+
+bot.onText(/\/upload_database_stickers/, (msg) => {
+    if (msg.chat.id === Number(process.env.chatId)) {
+        bot.sendMessage(msg.chat.id, '<b>Отправьте файл Stickers.json</b>', { parse_mode: 'HTML' });
+
+        bot.once('message', async (msg) => {
+            const FileInfo = await bot.getFile(msg.document.file_id);
+            const FileUrl = `https://api.telegram.org/file/bot${Token}/${FileInfo.file_path}`;
+
+            const res = await fetch(FileUrl);
+            const buffer = Buffer.from(await res.arrayBuffer());
+
+            fs.writeFileSync('Stickers.json', buffer);
+
+            Messages = JSON.parse(fs.readFileSync('Stickers.json'));
 
             bot.sendMessage(msg.chat.id, '<b>Успешная загрузка!</b>', { parse_mode: 'HTML' });
         });
