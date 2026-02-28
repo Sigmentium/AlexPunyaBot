@@ -62,8 +62,12 @@ function ConvertOGG(InputBuffer) {
 bot.on('sticker', (msg) => {
     const StickerId = msg.sticker.file_id;
 
+    if (!Array.isArray(Stickers[msg.chat.id])) {
+        Stickers[msg.chat.id] = [];
+    }
+
     if (!Stickers[msg.chat.id].includes(StickerId)) {
-        Stickers[msg.chat.id].push(text);
+        Stickers[msg.chat.id].push(StickerId);
         SaveSticker();
     }
 });
