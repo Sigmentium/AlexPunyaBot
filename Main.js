@@ -93,7 +93,9 @@ bot.on('message', async (msg) => {
     if (Random < 0.5) {
         const Message = Messages[msg.chat.id];
         const RandomMessage = Message[Math.floor(Math.random() * Message.length)];
-        bot.sendMessage(msg.chat.id, RandomMessage);
+        bot.sendMessage(msg.chat.id, RandomMessage, {
+            reply_to_message_id: msg.message_id
+        });
     }
     else if (Random > 0.7) {
         const Reactions = ['👍', '❤️', '😁', '🤣'];
@@ -109,9 +111,15 @@ bot.on('message', async (msg) => {
         });
     }
     else {
+        if (!Array.isArray(Stickers[msg.chat.id])) {
+            return;
+        }
+
         const Sticker = Stickers[msg.chat.id];
         const RandomSticker = Sticker[Math.floor(Math.random() * Sticker.length)];
-        bot.sendSticker(msg.chat.id, RandomSticker);
+        bot.sendSticker(msg.chat.id, RandomSticker, {
+            reply_to_message_id: msg.message_id
+        });
 
         // fetch('https://alexpunya-tts-server.onrender.com', {
         //     method: 'POST',
